@@ -116,43 +116,53 @@ with open('model/keypoint_classifier/keypoint_classifier_label.csv',
 
 
 class VideoProcessor:
-    def recv(self, frame):
-        frm = frame.to_ndarray(format="bgr24")
-        image = cv2.cvtColor(frm, cv2.COLOR_BGR2RGB)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        debug_image=copy.deepcopy(image)
-        detector_name="opencv"
-        detector = FaceDetector.build_model(detector_name) #set opencv, ssd, dlib, mtcnn or retinaface
-        obj2 = FaceDetector.detect_faces(detector, detector_name, debug_image)
+	def recv(self, frame):
+		frm = frame.to_ndarray(format="bgr24")
+		image = cv2.cvtColor(frm, cv2.COLOR_BGR2RGB)
+		image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+		debug_image=copy.deepcopy(image)
+		detector_name="opencv"
+		detector = FaceDetector.build_model(detector_name) #set opencv, ssd, dlib, mtcnn or retinaface
+		obj2 = FaceDetector.detect_faces(detector, detector_name, debug_image)
   
-        if (len(obj2)>=1):
-                print(len(obj2))
-                for i in range(len(obj2)):
-                    cur=obj2[i][1]
-                    x=cur[0]
-                    y=cur[1]
-                    w=cur[2]
-                    h=cur[3]
-                    detected_face=debug_image[y:y+h,x:x+w]
-                    image_height, image_width, c = detected_face.shape
-                    cv2.rectangle(debug_image,(x,y),(x+w,y+h),(0,0,0),1)                                            
-                    results = face_mesh.process(detected_face)
-                    if results.multi_face_landmarks is not None:
-                        for face_landmarks in results.multi_face_landmarks:
-                            landmark_list = calc_landmark_list(detected_face, face_landmarks)
-                            pre_processed_landmark_list = pre_process_landmark(
-                                landmark_list)
-                            facial_emotion_id = keypoint_classifier(pre_processed_landmark_list)
-                            predictions= keypoint_classifier_labels[facial_emotion_id]
-                            (wt, ht), _ = cv2.getTextSize(predictions, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
-                            cv2.rectangle(debug_image,(x,y-40),(x+wt,y),(0,0,0),-1)
-                            cv2.putText(debug_image, predictions, (x, y-12), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+		if (len(obj2)>=1):
+				print(len(obj2))
+				for i in range(len(obj2)):
+					cur=obj2[i][1]
+					x=cur[0]
+					y=cur[1]
+					w=cur[2]
+					h=cur[3]
+					detected_face=debug_image[y:y+h,x:x+w]
+					image_height, image_width, c = detected_face.shape
+					cv2.rectangle(debug_image,(x,y),(x+w,y+h),(0,0,0),1)							                
+					results = face_mesh.process(detected_face)
+					if results.multi_face_landmarks is not None:
+						for face_landmarks in results.multi_face_landmarks:
+							landmark_list = calc_landmark_list(detected_face, face_landmarks)
+							pre_processed_landmark_list = pre_process_landmark(
+								landmark_list)
+							facial_emotion_id = keypoint_classifier(pre_processed_landmark_list)
+							predictions= keypoint_classifier_labels[facial_emotion_id]
+							(wt, ht), _ = cv2.getTextSize(predictions, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+							cv2.rectangle(debug_image,(x,y-40),(x+wt,y),(0,0,0),-1)
+							cv2.putText(debug_image, predictions, (x, y-12), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+       
+							for i in range(0,478):
+								pt1=face_landmarks.landmark[i]
+								locx=int(pt1.x*image_height)
+								locy=int(pt1.y*image_width)
+								#cv2.circle(debug_image,(locx,locy),2,(100,100,0),-1)
+								#cv2.rectangle(debug_image,(locx,locy),2,(255,255,255),-1)	
+								cv2.circle(debug_image,(locx,locy),2,(68,42,32),-1)
+								
 
-        return av.VideoFrame.from_ndarray(debug_image, format='bgr24')
 
-title = "Real-time Face Emotion Detection"
-webrtc_streamer(key="emotion-detection", video_processor_factory=VideoProcessor,
-                rtc_configuration=RTCConfiguration(
-                    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
-                ),
-                client_settings={"title": title})
+
+		return av.VideoFrame.from_ndarray(debug_image, format='bgr24')
+
+webrtc_streamer(key="key", video_processor_factory=VideoProcessor,
+				rtc_configuration=RTCConfiguration(
+					{"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+	)
